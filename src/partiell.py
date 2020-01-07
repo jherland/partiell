@@ -25,7 +25,11 @@ class partial:
     list.
 
     We use '...' (the Ellipsis object) as a placeholder in the argument list
-    for the arguments that are not yet supplied.
+    for the arguments that are not yet supplied. The object returned from here
+    also supports being called with '...' for further partial application.
+
+    Use as a function decorator (@partial) to make a function automatically
+    support partial argument application with '...'.
 
     Usage:
 
@@ -38,6 +42,36 @@ class partial:
     >>> halve = partial(truediv, ..., 2)  # functools.partial() cannot do this
     >>> halve(3)
     1.5
+
+    As a function decorator to enable smoother partial function application:
+
+    >>> @partial
+    ... def f(x, y, z):
+    ...    return x * 100 + y * 10 + z
+
+    f() can now be called with '...' for partial function application:
+
+    >>> g = f(1, ...)  # Supply first argument only (x)
+    >>> g(2, 3)  # Supply the two remaining arguments (y, z)
+    123
+
+    Functions derived from f() automatically support '...' themselves:
+
+    >>> h = g(2, ...)  # Supply g's first argument (y)
+    >>> h(3)  # Supply the final argument (z)
+    123
+
+    Using the '...' placeholder also allows supplying arguments right-to-left:
+
+    >>> i = f(..., 3)  # Supply last argument only (z)
+    >>> i(1, 2)  # Supply the remaining arguments (x, y)
+    123
+
+    We can even supply arguments from both ends simultaneously:
+
+    >>> j = f(1, ..., 3)  # Supply first and last argument (x, z)
+    >>> j(2)  # Supply the remaining argument (y)
+    123
     """
 
     __slots__ = "func", "largs", "rargs", "keywords", "__dict__", "__weakref__"
@@ -76,6 +110,11 @@ class partial:
         return self
 
     def __call__(self, /, *args, **keywords):
+        for arg in args:
+            if arg is Ellipsis:  # another partial application
+                return self.__new__(type(self), self, *args, **keywords)
+
+        # final application
         keywords = {**self.keywords, **keywords}
         return self.func(*self.largs, *args, *self.rargs, **keywords)
 
