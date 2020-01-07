@@ -19,6 +19,25 @@ from reprlib import recursive_repr
 class partial:
     """New function with partial application of the given arguments
     and keywords.
+
+    An enhanced version of functools.partial() that allows partially applying
+    positional arguments from both the left and right sides of the argument
+    list.
+
+    We use '...' (the Ellipsis object) as a placeholder in the argument list
+    for the arguments that are not yet supplied.
+
+    Usage:
+
+    As a drop-in replacement for functools.partial():
+
+    >>> from operator import mul, truediv
+    >>> double = partial(mul, 2)  # same as functools.partial()
+    >>> double(5)
+    10
+    >>> halve = partial(truediv, ..., 2)  # functools.partial() cannot do this
+    >>> halve(3)
+    1.5
     """
 
     __slots__ = "func", "largs", "rargs", "keywords", "__dict__", "__weakref__"
@@ -27,8 +46,20 @@ class partial:
         if not callable(func):
             raise TypeError("the first argument must be callable")
 
-        largs = tuple(args)
-        rargs = tuple()
+        # split args into left and right parts
+        ellipsis = None
+        for i, arg in enumerate(args):
+            if arg is Ellipsis:
+                if ellipsis is None:
+                    ellipsis = i
+                else:
+                    raise TypeError("cannot use more than one ... in arguments")
+        if ellipsis is None:  # same behavior as partial()
+            largs = tuple(args)
+            rargs = tuple()
+        else:
+            largs = tuple(args[:ellipsis])
+            rargs = tuple(args[ellipsis + 1 :])
 
         if hasattr(func, "func"):
             largs = func.largs + largs
@@ -53,6 +84,7 @@ class partial:
         qualname = type(self).__qualname__
         args = [repr(self.func)]
         args.extend(repr(x) for x in self.largs)
+        args.append("...")
         args.extend(repr(x) for x in self.rargs)
         args.extend(f"{k}={v!r}" for (k, v) in self.keywords.items())
         if type(self).__module__ == "partiell":
