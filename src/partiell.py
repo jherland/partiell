@@ -131,8 +131,17 @@ class partial:
         return f"{qualname}({', '.join(args)})"
 
     def __reduce__(self):
-        return type(self), (self.func,), (self.func, self.largs, self.rargs,
-               self.keywords or None, self.__dict__ or None)
+        return (
+            type(self),
+            (self.func,),
+            (
+                self.func,
+                self.largs,
+                self.rargs,
+                self.keywords or None,
+                self.__dict__ or None,
+            ),
+        )
 
     def __setstate__(self, state):
         if not isinstance(state, tuple):
@@ -140,17 +149,20 @@ class partial:
         if len(state) != 5:
             raise TypeError(f"expected 5 items in state, got {len(state)}")
         func, largs, rargs, kwds, namespace = state
-        if (not callable(func) or
-           not isinstance(largs, tuple) or not isinstance(rargs, tuple) or
-           (kwds is not None and not isinstance(kwds, dict)) or
-           (namespace is not None and not isinstance(namespace, dict))):
+        if (
+            not callable(func)
+            or not isinstance(largs, tuple)
+            or not isinstance(rargs, tuple)
+            or (kwds is not None and not isinstance(kwds, dict))
+            or (namespace is not None and not isinstance(namespace, dict))
+        ):
             raise TypeError("invalid partial state")
 
         largs = tuple(largs)  # just in case it's a subclass
         rargs = tuple(rargs)  # just in case it's a subclass
         if kwds is None:
             kwds = {}
-        elif type(kwds) is not dict: # XXX does it need to be *exactly* dict?
+        elif type(kwds) is not dict:  # XXX does it need to be *exactly* dict?
             kwds = dict(kwds)
         if namespace is None:
             namespace = {}
