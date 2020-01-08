@@ -1,0 +1,4 @@
+include *.nix
+include *.py
+include *.sh
+include LICENSE
