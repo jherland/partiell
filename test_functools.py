@@ -7,7 +7,7 @@ import unittest.mock
 from weakref import proxy
 import contextlib
 
-py_functools = support.import_fresh_module('functools', blocked=['_functools'])
+py_functools = support.import_fresh_module("partiell")
 
 
 @contextlib.contextmanager
@@ -26,7 +26,7 @@ def capture(*args, **kw):
 
 def signature(part):
     """ return the signature of a partial object """
-    return (part.func, part.args, part.keywords, part.__dict__)
+    return (part.func, part.largs, part.keywords, part.__dict__)
 
 class MyTuple(tuple):
     pass
@@ -53,7 +53,7 @@ class TestPartial:
         p = self.partial(capture, 1, 2, a=10, b=20)
         # attributes should be readable
         self.assertEqual(p.func, capture)
-        self.assertEqual(p.args, (1, 2))
+        self.assertEqual(p.largs, (1, 2))
         self.assertEqual(p.keywords, dict(a=10, b=20))
 
     def test_argument_checking(self):
@@ -181,52 +181,52 @@ class TestPartial:
         kwargs_reprs = ['a={a!r}, b={b!r}'.format_map(kwargs),
                         'b={b!r}, a={a!r}'.format_map(kwargs)]
         if self.partial in (py_functools.partial,):
-            name = 'functools.partial'
+            name = 'partiell.partial'
         else:
             name = self.partial.__name__
 
         f = self.partial(capture)
-        self.assertEqual(f'{name}({capture!r})', repr(f))
+        self.assertEqual(f'{name}({capture!r}, ...)', repr(f))
 
         f = self.partial(capture, *args)
-        self.assertEqual(f'{name}({capture!r}, {args_repr})', repr(f))
+        self.assertEqual(f'{name}({capture!r}, {args_repr}, ...)', repr(f))
 
         f = self.partial(capture, **kwargs)
         self.assertIn(repr(f),
-                      [f'{name}({capture!r}, {kwargs_repr})'
+                      [f'{name}({capture!r}, ..., {kwargs_repr})'
                        for kwargs_repr in kwargs_reprs])
 
         f = self.partial(capture, *args, **kwargs)
         self.assertIn(repr(f),
-                      [f'{name}({capture!r}, {args_repr}, {kwargs_repr})'
+                      [f'{name}({capture!r}, {args_repr}, ..., {kwargs_repr})'
                        for kwargs_repr in kwargs_reprs])
 
     def test_recursive_repr(self):
         if self.partial in (py_functools.partial,):
-            name = 'functools.partial'
+            name = 'partiell.partial'
         else:
             name = self.partial.__name__
 
         f = self.partial(capture)
-        f.__setstate__((f, (), {}, {}))
+        f.__setstate__((f, (), (), {}, {}))
         try:
-            self.assertEqual(repr(f), '%s(...)' % (name,))
+            self.assertEqual(repr(f), '%s(..., ...)' % (name,))
         finally:
-            f.__setstate__((capture, (), {}, {}))
+            f.__setstate__((capture, (), (), {}, {}))
 
         f = self.partial(capture)
-        f.__setstate__((capture, (f,), {}, {}))
+        f.__setstate__((capture, (f,), (), {}, {}))
         try:
-            self.assertEqual(repr(f), '%s(%r, ...)' % (name, capture,))
+            self.assertEqual(repr(f), '%s(%r, ..., ...)' % (name, capture,))
         finally:
-            f.__setstate__((capture, (), {}, {}))
+            f.__setstate__((capture, (), (), {}, {}))
 
         f = self.partial(capture)
-        f.__setstate__((capture, (), {'a': f}, {}))
+        f.__setstate__((capture, (), (), {'a': f}, {}))
         try:
-            self.assertEqual(repr(f), '%s(%r, a=...)' % (name, capture,))
+            self.assertEqual(repr(f), '%s(%r, ..., a=...)' % (name, capture,))
         finally:
-            f.__setstate__((capture, (), {}, {}))
+            f.__setstate__((capture, (), (), {}, {}))
 
     def test_pickle(self):
         with self.AllowPickle():
@@ -242,7 +242,7 @@ class TestPartial:
         f_copy = copy.copy(f)
         self.assertEqual(signature(f_copy), signature(f))
         self.assertIs(f_copy.attr, f.attr)
-        self.assertIs(f_copy.args, f.args)
+        self.assertIs(f_copy.largs, f.largs)
         self.assertIs(f_copy.keywords, f.keywords)
 
     def test_deepcopy(self):
@@ -251,31 +251,31 @@ class TestPartial:
         f_copy = copy.deepcopy(f)
         self.assertEqual(signature(f_copy), signature(f))
         self.assertIsNot(f_copy.attr, f.attr)
-        self.assertIsNot(f_copy.args, f.args)
-        self.assertIsNot(f_copy.args[0], f.args[0])
+        self.assertIsNot(f_copy.largs, f.largs)
+        self.assertIsNot(f_copy.largs[0], f.largs[0])
         self.assertIsNot(f_copy.keywords, f.keywords)
         self.assertIsNot(f_copy.keywords['bar'], f.keywords['bar'])
 
     def test_setstate(self):
         f = self.partial(signature)
-        f.__setstate__((capture, (1,), dict(a=10), dict(attr=[])))
+        f.__setstate__((capture, (1,), (), dict(a=10), dict(attr=[])))
 
         self.assertEqual(signature(f),
                          (capture, (1,), dict(a=10), dict(attr=[])))
         self.assertEqual(f(2, b=20), ((1, 2), {'a': 10, 'b': 20}))
 
-        f.__setstate__((capture, (1,), dict(a=10), None))
+        f.__setstate__((capture, (1,), (), dict(a=10), None))
 
         self.assertEqual(signature(f), (capture, (1,), dict(a=10), {}))
         self.assertEqual(f(2, b=20), ((1, 2), {'a': 10, 'b': 20}))
 
-        f.__setstate__((capture, (1,), None, None))
+        f.__setstate__((capture, (1,), (), None, None))
         #self.assertEqual(signature(f), (capture, (1,), {}, {}))
         self.assertEqual(f(2, b=20), ((1, 2), {'b': 20}))
         self.assertEqual(f(2), ((1, 2), {}))
         self.assertEqual(f(), ((1,), {}))
 
-        f.__setstate__((capture, (), {}, None))
+        f.__setstate__((capture, (), (), {}, None))
         self.assertEqual(signature(f), (capture, (), {}, {}))
         self.assertEqual(f(2, b=20), ((2,), {'b': 20}))
         self.assertEqual(f(2), ((2,), {}))
@@ -283,17 +283,19 @@ class TestPartial:
 
     def test_setstate_errors(self):
         f = self.partial(signature)
-        self.assertRaises(TypeError, f.__setstate__, (capture, (), {}))
-        self.assertRaises(TypeError, f.__setstate__, (capture, (), {}, {}, None))
-        self.assertRaises(TypeError, f.__setstate__, [capture, (), {}, None])
-        self.assertRaises(TypeError, f.__setstate__, (None, (), {}, None))
-        self.assertRaises(TypeError, f.__setstate__, (capture, None, {}, None))
-        self.assertRaises(TypeError, f.__setstate__, (capture, [], {}, None))
-        self.assertRaises(TypeError, f.__setstate__, (capture, (), [], None))
+        self.assertRaises(TypeError, f.__setstate__, (capture, (), (), {}))
+        self.assertRaises(TypeError, f.__setstate__, (capture, (), (), {}, {}, None))
+        self.assertRaises(TypeError, f.__setstate__, [capture, (), (), {}, None])
+        self.assertRaises(TypeError, f.__setstate__, (None, (), (), {}, None))
+        self.assertRaises(TypeError, f.__setstate__, (capture, None, (), {}, None))
+        self.assertRaises(TypeError, f.__setstate__, (capture, (), None, {}, None))
+        self.assertRaises(TypeError, f.__setstate__, (capture, [], (), {}, None))
+        self.assertRaises(TypeError, f.__setstate__, (capture, (), [], {}, None))
+        self.assertRaises(TypeError, f.__setstate__, (capture, (), (), [], None))
 
     def test_setstate_subclasses(self):
         f = self.partial(signature)
-        f.__setstate__((capture, MyTuple((1,)), MyDict(a=10), None))
+        f.__setstate__((capture, MyTuple((1,)), MyTuple(), MyDict(a=10), None))
         s = signature(f)
         self.assertEqual(s, (capture, (1,), dict(a=10), {}))
         self.assertIs(type(s[1]), tuple)
@@ -303,7 +305,7 @@ class TestPartial:
         self.assertIs(type(r[0]), tuple)
         self.assertIs(type(r[1]), dict)
 
-        f.__setstate__((capture, BadTuple((1,)), {}, None))
+        f.__setstate__((capture, BadTuple((1,)), (), {}, None))
         s = signature(f)
         self.assertEqual(s, (capture, (1,), {}, {}))
         self.assertIs(type(s[1]), tuple)
@@ -314,37 +316,37 @@ class TestPartial:
     def test_recursive_pickle(self):
         with self.AllowPickle():
             f = self.partial(capture)
-            f.__setstate__((f, (), {}, {}))
+            f.__setstate__((f, (), (), {}, {}))
             try:
                 for proto in range(pickle.HIGHEST_PROTOCOL + 1):
                     with self.assertRaises(RecursionError):
                         pickle.dumps(f, proto)
             finally:
-                f.__setstate__((capture, (), {}, {}))
+                f.__setstate__((capture, (), (), {}, {}))
 
             f = self.partial(capture)
-            f.__setstate__((capture, (f,), {}, {}))
+            f.__setstate__((capture, (f,), (), {}, {}))
             try:
                 for proto in range(pickle.HIGHEST_PROTOCOL + 1):
                     f_copy = pickle.loads(pickle.dumps(f, proto))
                     try:
-                        self.assertIs(f_copy.args[0], f_copy)
+                        self.assertIs(f_copy.largs[0], f_copy)
                     finally:
-                        f_copy.__setstate__((capture, (), {}, {}))
+                        f_copy.__setstate__((capture, (), (), {}, {}))
             finally:
-                f.__setstate__((capture, (), {}, {}))
+                f.__setstate__((capture, (), (), {}, {}))
 
             f = self.partial(capture)
-            f.__setstate__((capture, (), {'a': f}, {}))
+            f.__setstate__((capture, (), (), {'a': f}, {}))
             try:
                 for proto in range(pickle.HIGHEST_PROTOCOL + 1):
                     f_copy = pickle.loads(pickle.dumps(f, proto))
                     try:
                         self.assertIs(f_copy.keywords['a'], f_copy)
                     finally:
-                        f_copy.__setstate__((capture, (), {}, {}))
+                        f_copy.__setstate__((capture, (), (), {}, {}))
             finally:
-                f.__setstate__((capture, (), {}, {}))
+                f.__setstate__((capture, (), (), {}, {}))
 
     # Issue 6083: Reference counting bug
     def test_setstate_refcount(self):
