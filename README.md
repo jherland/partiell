@@ -80,6 +80,13 @@ Using `...` as a placeholder for future function arguments allows for a
 of invoking partial() explicitly and the implicit currying provided by e.g.
 the `@curry` decorator in [PyMonad](https://pypi.org/project/PyMonad/).
 
+The idea of using `...` as a placeholder for function arguments and having it
+convert a function call into a partial function application is not new.
+AFAICS, it was first discussed on [python-list in 2005](
+https://www.mail-archive.com/python-list@python.org/msg17922.html), around the
+time `partial()` was first added to the Python standard library ([PEP 309](
+https://www.python.org/dev/peps/pep-0309/)).
+
 ## Installation
 
 Run the following to install:
