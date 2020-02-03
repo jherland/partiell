@@ -16,14 +16,11 @@ mkShell {
   ];
   shellHook = ''
     # Setup up virtualenv for development
+    unset SOURCE_DATE_EPOCH
     python -m venv --clear .venv
     source .venv/bin/activate
 
-    # Allow the use of wheels.
-    unset SOURCE_DATE_EPOCH
-    pip install wheel --disable-pip-version-check
-
     # Install dev requirements
-	pip install -e .\[dev\]
+    pip install -e .\[dev\]
   '';
 }
