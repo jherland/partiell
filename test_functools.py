@@ -26,7 +26,7 @@ def capture(*args, **kw):
 
 
 def signature(part):
-    """ return the signature of a partial object """
+    """return the signature of a partial object"""
     return (part.func, part.largs, part.keywords, part.__dict__)
 
 
@@ -231,14 +231,28 @@ class TestPartial:
         f = self.partial(capture)
         f.__setstate__((capture, (f,), (), {}, {}))
         try:
-            self.assertEqual(repr(f), "%s(%r, ..., ...)" % (name, capture,))
+            self.assertEqual(
+                repr(f),
+                "%s(%r, ..., ...)"
+                % (
+                    name,
+                    capture,
+                ),
+            )
         finally:
             f.__setstate__((capture, (), (), {}, {}))
 
         f = self.partial(capture)
         f.__setstate__((capture, (), (), {"a": f}, {}))
         try:
-            self.assertEqual(repr(f), "%s(%r, ..., a=...)" % (name, capture,))
+            self.assertEqual(
+                repr(f),
+                "%s(%r, ..., a=...)"
+                % (
+                    name,
+                    capture,
+                ),
+            )
         finally:
             f.__setstate__((capture, (), (), {}, {}))
 
