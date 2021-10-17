@@ -23,10 +23,14 @@ setup(
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
         "Topic :: Software Development :: Libraries :: Python Modules",
     ],
     keywords="functools partial ellipsis functional currying",
     python_requires=">=3.8",
     install_requires=[],
-    extras_require={"dev": ["black", "check-manifest", "flake8", "twine"]},
+    extras_require={
+        "dev": ["black", "flake8", "nox"],
+        "dist": ["check-manifest", "twine", "wheel"],
+    },
 )

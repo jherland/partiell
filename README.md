@@ -112,10 +112,10 @@ a development environment:
 $ nix-shell
 ```
 
-Use the `run_tests.sh` script to run all tests:
+Use `nox` to run all tests (as defined in `noxfile.py`):
 
 ```bash
-$ ./run_tests.sh
+$ nox
 ```
 
 ## Contributing
