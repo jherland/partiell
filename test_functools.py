@@ -1,13 +1,17 @@
 import copy
 import pickle
 import sys
-from test import support
 import unittest
 import unittest.mock
 from weakref import proxy
 import contextlib
 
-py_functools = support.import_fresh_module("partiell")
+try:
+    from test.support.import_helper import import_fresh_module
+except ImportError:  # Python <v3.10
+    from test.support import import_fresh_module
+
+py_functools = import_fresh_module("partiell")
 
 
 @contextlib.contextmanager
