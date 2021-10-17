@@ -12,7 +12,7 @@ from reprlib import recursive_repr
 
 
 ################################################################################
-### partial() argument application
+# partial() argument application
 ################################################################################
 
 # Purely functional, no descriptor behaviour

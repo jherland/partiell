@@ -28,5 +28,5 @@ setup(
     keywords="functools partial ellipsis functional currying",
     python_requires=">=3.8",
     install_requires=[],
-    extras_require={"dev": ["black", "check-manifest", "twine"]},
+    extras_require={"dev": ["black", "check-manifest", "flake8", "twine"]},
 )
