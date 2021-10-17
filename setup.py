@@ -5,7 +5,7 @@ with open("README.md") as f:
 
 setup(
     name="partiell",
-    version="0.0.1",
+    version="0.0.2",
     description="Partial function application with '...'",
     long_description=long_description,
     long_description_content_type="text/markdown",
