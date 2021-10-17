@@ -1,26 +1,24 @@
 # Run nix-shell without arguments to enter an environment with all the
-# development dependencies in place.
+# project dependencies in place.
+{
+  pkgs ? import (builtins.fetchGit {
+    url = "https://github.com/NixOS/nixpkgs/";
+    ref = "nixos-21.05";
+  }) {}
+}:
 
-with import <nixpkgs> {};
-
-mkShell {
-  name = "partiell-env";
-  buildInputs = [
-    (python38.withPackages (ps: with ps; [
-      setuptools
-      pip
-      wheel
-    ]))
-    libffi
-    gcc
+pkgs.mkShell {
+  venvDir = "./.venv";
+  buildInputs = with pkgs; [
+    python38
+    python38Packages.venvShellHook
+    python39
+    python310
   ];
-  shellHook = ''
-    # Setup up virtualenv for development
+  postShellHook = ''
     unset SOURCE_DATE_EPOCH
-    python -m venv --clear .venv
-    source .venv/bin/activate
 
     # Install dev requirements
-    pip install -e .\[dev\]
+    pip install -e .\[dev,dist\]
   '';
 }
